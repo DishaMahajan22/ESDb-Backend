@@ -11,7 +11,8 @@ app.use(express.json());
 app.use(cors())
 
 const corsOptions = {
-  origin: 'https://esdb.onrender.com',
+  // origin: ['https://esdb.onrender.com','http://localhost:3000'],
+  origin: ['https://esdb.onrender.com'],
   optionsSuccessStatus: 200, // some legacy browsers (IE11, various SmartTVs) choke on 204
 };
 
@@ -30,12 +31,53 @@ connection.connect()
 app.get('/search', async (req, res) => {
   console.log('Request received at /search');
   try {
-    //Search for Tournament
-    const result = await connection.query('SELECT * FROM Tournament');
-    const rows = result.rows; // Access the 'rows' of the data
+    const { searchItem, searchName } = req.query;
+
+    //if there is no search parameter for some reason, fail 
+    if (!searchItem) {
+      return res.status(400).json({ error: 'Bad Request', message: 'searchItem parameter is required' });
+    }
+
+    let finalRes;
+    // Perform different searches based on the searchItem parameter
+    switch (searchItem.toLowerCase()) {
+      case 'tournament':
+        if (searchName !== "" && searchName !== undefined ){
+          finalRes = await connection.query('SELECT * FROM Tournament WHERE Name iLIKE $1', [`%${searchName}%`]);
+        } else{
+          finalRes = await connection.query('SELECT * FROM Tournament');
+        }
+        break;
+      case 'player':
+        if (searchName !== "" && searchName !== undefined ){
+          finalRes = await connection.query('SELECT * FROM Player WHERE Name iLIKE $1', [`%${searchName}%`]);
+        } else{
+          finalRes = await connection.query('SELECT * FROM Player');
+        }
+        break;
+      case 'game':
+        if (searchName !== "" && searchName !== undefined ){
+          finalRes = await connection.query('SELECT * FROM Game WHERE Name iLIKE $1', [`%${searchName}%`]);
+        } else{
+          finalRes = await connection.query('SELECT * FROM Game');
+        }
+        break;
+      case 'team':
+        if (searchName !== "" && searchName !== undefined ){
+          finalRes = await connection.query('SELECT * FROM Team WHERE Name iLIKE $1', [`%${searchName}%`]);
+        } else{
+          finalRes = await connection.query('SELECT * FROM Team');
+        }
+
+        break;
+      default:
+        return res.status(400).json({ error: 'Bad Request', message: 'Invalid searchItem parameter' });
+    }
+
+    const rows = finalRes.rows; // Access the 'rows' of the data
 
     // Log the result to the console
-    console.log('Tournament:', rows);
+    console.log('Result Log Test:', rows);
 
     // Send the retrieved tournament as JSON in the response
     res.json(rows);
