@@ -15,29 +15,36 @@ const corsOptions = {
   optionsSuccessStatus: 200, // some legacy browsers (IE11, various SmartTVs) choke on 204
 };
 
-const connection = new Client(process.env.DATABASE_URL);
+const connection = new Client({
+  connectionString: process.env.DATABASE_URL
+});
+connection.connect()
+  .then(() => {
+    console.log('Connected to the database');
+  })
+  .catch((error) => {
+    console.error('Error connecting to the database:', error);
+  });
 
 // Endpoint for handling search requests
-
 app.get('/search', async (req, res) => {
+  console.log('Request received at /search');
   try {
     //Search for Tournament
-    const [rows] = await connection.query(
-      'SELECT * FROM Tournament WHERE Tournament_ID = 0',
-    );
+    const result = await connection.query('SELECT * FROM Tournament');
+    const rows = result.rows; // Access the 'rows' of the data
 
     // Log the result to the console
     console.log('Tournament:', rows);
 
     // Send the retrieved tournament as JSON in the response
     res.json(rows);
-
   } catch (error) {
 
-    // Log any errors
-    console.error('Error inserting in the database:', error);
+    // Log errors
+    console.error('Error searching in the database:', error);
 
-    // Send error message in the response
+    // Send error message in the response to frontend
     res.status(500).json({ error: 'Internal Server Error', message: error.message });
   }
 });
