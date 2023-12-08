@@ -49,6 +49,32 @@ app.get('/search', async (req, res) => {
   }
 });
 
+// Endpoint for handling insert requests
+app.post('/insert', async (req, res) => {
+  console.log('Request received at /insert');
+  try {
+    // Insert a new tournament
+    const result = await connection.query(
+      "INSERT INTO Tournament VALUES ($1, $2, $3, $4)",
+      [req.Tournament_ID, req.Name, req.Start_date, req.End_date]
+    );
+    const rows = result.rows; // Access the 'rows' of the data
+
+    // Log the result to the console
+    console.log('Tournament:', rows);
+
+    // Send the retrieved tournament as JSON in the response
+    res.json(rows);
+  } catch (error) {
+
+    // Log errors
+    console.error('Error inserting in the database:', error);
+
+    // Send error message in the response to frontend
+    res.status(500).json({ error: 'Internal Server Error', message: error.message });
+  }
+});
+
 // Start the server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
