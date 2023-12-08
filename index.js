@@ -19,7 +19,7 @@ const connection = new Client(process.env.DATABASE_URL);
 
 // Endpoint for handling search requests
 
-app.get('/search', async (req, res) => {
+app.get('https://esdb-backend.onrender.com/search', async (req, res) => {
   try {
     //Search for Tournament
     const [rows] = await connection.query(
