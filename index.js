@@ -51,12 +51,14 @@ app.get('/search', async (req, res) => {
 
 // Endpoint for handling insert requests
 app.post('/insert', async (req, res) => {
+  const { Tournament_ID, Name, Start_date, End_date } = req.body;
+
   console.log('Request received at /insert');
   try {
     // Insert a new tournament
     const result = await connection.query(
       "INSERT INTO Tournament VALUES ($1, $2, $3, $4)",
-      [req.Tournament_ID, req.Name, req.Start_date, req.End_date]
+      [Tournament_ID, Name, Start_date, End_date]
     );
     const rows = result.rows; // Access the 'rows' of the data
 
