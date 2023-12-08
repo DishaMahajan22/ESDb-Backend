@@ -14,6 +14,7 @@ const corsOptions = {
   origin: 'https://esdb.onrender.com',
   optionsSuccessStatus: 200, // some legacy browsers (IE11, various SmartTVs) choke on 204
 };
+
 const connection = new Client(process.env.DATABASE_URL);
 
 // Endpoint for handling search requests
@@ -21,9 +22,8 @@ const connection = new Client(process.env.DATABASE_URL);
 app.get('/search', async (req, res) => {
   try {
     //Search for Tournament
-    const [rows] = await connection.promise().query(
-      'SELECT * FROM Tournament WHERE Tournament_ID = ?',
-      [0]
+    const [rows] = await connection.query(
+      'SELECT * FROM Tournament WHERE Tournament_ID = 0',
     );
 
     // Log the result to the console
