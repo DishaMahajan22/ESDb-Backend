@@ -57,7 +57,7 @@ app.get('/search', async (req, res) => {
         break;
       case 'game':
         if (searchName !== "" && searchName !== undefined ){
-          finalRes = await connection.query('SELECT * FROM Game WHERE Name iLIKE $1', [`%${searchName}%`]);
+          finalRes = await connection.query('SELECT * FROM Game WHERE Game_Name iLIKE $1', [`%${searchName}%`]);
         } else{
           finalRes = await connection.query('SELECT * FROM Game');
         }
