@@ -1,23 +1,17 @@
 const express = require('express');
-var cors = require('cors')
-const test = require('dotenv').config();
+const cors = require('cors');
+const { Client } = require('pg');
+const test = require("dotenv").config();
 console.log(test);
-const mysql = require('mysql2')
-const app = express();
-const path = require('path');
-const { Client } = require("pg");
-// Middleware to parse JSON requests
-app.use(express.json());
-app.use(cors())
 
-const corsOptions = {
-  origin: 'https://esdb.onrender.com',
-  optionsSuccessStatus: 200, // some legacy browsers (IE11, various SmartTVs) choke on 204
-};
+const app = express(); // Define 'app' here
+app.use(cors());
+app.use(express.json());
 
 const connection = new Client({
-  connectionString: process.env.DATABASE_URL
+  connectionString: process.env.DATABASE_URL,
 });
+
 connection.connect()
   .then(() => {
     console.log('Connected to the database');
@@ -25,6 +19,14 @@ connection.connect()
   .catch((error) => {
     console.error('Error connecting to the database:', error);
   });
+
+// CORS Options
+const corsOptions = {
+  origin: ["https://esdb.onrender.com/", "http://localhost:3000/"],
+  optionsSuccessStatus: 200,
+};
+
+app.use(cors(corsOptions)); // Use cors middleware here
 
 // Endpoint for handling search requests
 app.get('/search', async (req, res) => {
@@ -51,11 +53,13 @@ app.get('/search', async (req, res) => {
 
 // Endpoint for handling insert requests for inserting a new tournament [Tournament_ID, Name, Start_date, End_date]
 app.post('/insertTournament', async (req, res) => {
-  const { Tournament_ID, Name, Start_date, End_date } = req.body;
+  console.log("inserted tournament");
 
   console.log('Request received at /insert');
+  console.log('Request Body:', req.body);
   try {
     // Insert a new tournament
+    const { Tournament_ID, Name, Start_date, End_date } = req.body;
     const result = await connection.query(
       "INSERT INTO Tournament VALUES ($1, $2, $3, $4)",
       [Tournament_ID, Name, Start_date, End_date]
@@ -64,6 +68,7 @@ app.post('/insertTournament', async (req, res) => {
 
     // Log the result to the console
     console.log('Tournament:', rows);
+    
 
     // Send the retrieved tournament as JSON in the response
     res.json(rows);
@@ -135,14 +140,15 @@ app.post('/insertOutcome', async (req, res) => {
 
 // Endpoint for handling insert requests for inserting a new Statistic [Statistic_ID, Player_ID, Most_used_weapon, Most_played_character, Accuracy, K_D_Ratio, Win_Rate]
 app.post('/insertStatistic', async (req, res) => {
-  const { Statistic_ID, Player_ID, Most_used_weapon, Most_played_character, Accuracy, K_D_Ratio, Win_Rate } = req.body;
+  const { Statistic_ID, Player_ID, Most_used_weapon, Most_played_character, Accuracy, K_D_ratio, Win_rate } = req.body;
 
   console.log('Request received at /insertStatistic');
+  console.log(Statistic_ID, Player_ID, Most_used_weapon, Most_played_character, Accuracy, K_D_ratio, Win_rate);
   try {
     // Insert a new statistic
     const result = await connection.query(
       "INSERT INTO Statistic VALUES ($1, $2, $3, $4, $5, $6, $7)",
-      [Statistic_ID, Player_ID, Most_used_weapon, Most_played_character, Accuracy, K_D_Ratio, Win_Rate]
+      [Statistic_ID, Player_ID, Most_used_weapon, Most_played_character, Accuracy, K_D_ratio, Win_rate]
     );
     const rows = result.rows; // Access the 'rows' of the data
 
@@ -234,6 +240,34 @@ app.post('/insertGame', async (req, res) => {
     console.log('Game:', rows);
 
     // Send the retrieved game as JSON in the response
+    res.json(rows);
+  } catch (error) {
+
+    // Log errors
+    console.error('Error inserting in the database:', error);
+
+    // Send error message in the response to frontend
+    res.status(500).json({ error: 'Internal Server Error', message: error.message });
+  }
+});
+
+// Endpoint for handling insert requests for inserting a new Sponsors [Event_Name, Sponsor_ID, Outcome_ID]
+app.post('/insertSponsorRelationship', async (req, res) => {
+  const { Event_Name, Sponsor_ID, Outcome_ID } = req.body;
+
+  console.log('Request received at /insertSponsors');
+  try {
+    // Insert a new sponsors
+    const result = await connection.query(
+      "INSERT INTO Sponsors VALUES ($1, $2, $3)",
+      [Event_Name, Sponsor_ID, Outcome_ID]
+    );
+    const rows = result.rows; // Access the 'rows' of the data
+
+    // Log the result to the console
+    console.log('Sponsors:', rows);
+
+    // Send the retrieved sponsors as JSON in the response
     res.json(rows);
   } catch (error) {
 
