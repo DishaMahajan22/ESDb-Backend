@@ -88,27 +88,28 @@ app.get("/search", async (req, res) => {
 
         break;
       case "event":
-          if (searchName !== "" && searchName !== undefined) {
-            finalRes = await connection.query(
-              "SELECT * FROM Event WHERE Event_name iLIKE $1",
-              [`%${searchName}%`]
-            );
-          } else {
-            finalRes = await connection.query("SELECT * FROM Event");
-          }
-  
-          break;
-     case "sponsor":
-            if (searchName !== "" && searchName !== undefined) {
-              finalRes = await connection.query(
-                "SELECT * FROM Sponsor WHERE Name iLIKE $1",
-                [`%${searchName}%`]
-              );
-            } else {
-              finalRes = await connection.query("SELECT * FROM Sponsor");
-            }
-    
-            break;
+        console.log("search Name" + searchName);
+        if (searchName !== "" && searchName !== undefined) {
+          finalRes = await connection.query(
+            "SELECT * FROM Event WHERE Event_name iLIKE $1",
+            [`%${searchName}%`]
+          );
+        } else {
+          finalRes = await connection.query("SELECT * FROM Event");
+        }
+
+        break;
+      case "sponsor":
+        if (searchName !== "" && searchName !== undefined) {
+          finalRes = await connection.query(
+            "SELECT * FROM Sponsor WHERE Name iLIKE $1",
+            [`%${searchName}%`]
+          );
+        } else {
+          finalRes = await connection.query("SELECT * FROM Sponsor");
+        }
+
+        break;
       default:
         return res.status(400).json({
           error: "Bad Request",
@@ -177,18 +178,80 @@ WHERE
       .json({ error: "Internal Server Error", message: error.message });
   }
 });
+// Endpoint for handling search Event Filter requests
+app.get("/searchEvent", async (req, res) => {
+  console.log("Request received at /searchEvent");
+  try {
+    const { searchItem, searchName, sponsorName, startDate, endDate } =
+      req.query;
+    if (!searchItem) {
+      return res
+        .status(400)
+        .json({
+          error: "Bad Request",
+          message: "searchItem parameter is required",
+        });
+    }
+
+    let finalRes;
+    let finalQuery;
+    const queryParams = [searchName]; // Initialize queryParams here
+
+    const item = searchItem.toLowerCase();
+    switch (searchItem.toLowerCase()) {
+      case "tournament":
+        finalQuery = `SELECT e.Event_name, s.Name AS Sponsor_Name
+        FROM Event AS e
+        JOIN Tournament AS t ON e.Tournament_ID = t.Tournament_ID
+        LEFT JOIN Sponsor AS s ON e.Sponsor_ID = s.Sponsor_ID
+        WHERE t.Name = $1`;
+
+        if (sponsorName) {
+          finalQuery += ` AND s.Name = $2`;
+          queryParams.push(sponsorName);
+        }
+        if (
+          startDate !== null &&
+          startDate !== "" &&
+          endDate !== null &&
+          endDate !== ""
+        ) {
+          finalQuery += ` AND e.Start_Date >= $3 AND e.End_Date <= $4`;
+          queryParams.push(startDate, endDate);
+        }
+        break;
+      default:
+        return res
+          .status(400)
+          .json({
+            error: "Bad Request Search Event",
+            message: "Invalid searchItem parameter",
+          });
+    }
+
+    finalRes = await connection.query(finalQuery, queryParams);
+
+    const rows = finalRes.rows; // Access the 'rows' of the data
+
+    // Log the result to the console
+    console.log("Result Log Test:", rows);
+
+    // Send the retrieved tournament as JSON in the response
+    res.json(rows);
+  } catch (error) {
+    console.error("Error searching in the database:", error);
+
+    // Send error message in the response to frontend
+    res
+      .status(500)
+      .json({ error: "Internal Server Error", message: error.message });
+  }
+});
 // Endpoint for handling search Team Outcomes
 app.get("/searchTeamEventOutcomes", async (req, res) => {
   console.log("Request received at /searchTeamEventOutcomes");
   try {
-    const {searchName, eventFilter} =
-      req.query;
-    if (!searchItem) {
-      return res.status(400).json({
-        error: "Bad Request",
-        message: "searchItem parameter is required",
-      });
-    }
+    const { searchName, eventFilter } = req.query;
 
     let finalRes;
     let finalQuery;
