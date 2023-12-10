@@ -12,8 +12,8 @@ app.use(express.json());
 app.use(cors());
 
 const corsOptions = {
-  //origin: ["https://esdb.onrender.com", "http://localhost:3000"],
-  origin: ['https://esdb.onrender.com'],
+  origin: ["https://esdb.onrender.com", "http://localhost:3000"],
+  //origin: ['https://esdb.onrender.com'],
   optionsSuccessStatus: 200, // some legacy browsers (IE11, various SmartTVs) choke on 204
 };
 
@@ -176,6 +176,39 @@ WHERE
     res
       .status(500)
       .json({ error: "Internal Server Error", message: error.message });
+  }
+});
+app.put("/updatePlayer", async (req, res) => {
+  console.log("Request received at /updatePlayer");
+
+  try {
+    const updatedPlayer = req.body;
+
+    const playerId = updatedPlayer.player_id;
+    console.log("player id: ", playerId);
+    console.log("updated gamer id: ", updatedPlayer.gamertag);
+
+    const query = `
+      UPDATE Player
+      SET gamertag = $1
+      WHERE player_id = $2
+      RETURNING *;
+    `;
+
+   const result = await connection.query(query, [updatedPlayer.gamertag, playerId]);
+
+   const updatedRows = result.rows;
+
+    if (updatedRows.length === 0) {
+      return res.status(404).json({ error: "Player not found" });
+    }
+
+    console.log("Player updated successfully:", updatedRows[0]);
+
+    res.json({ message: "Player updated successfully", updatedPlayer: updatedRows[0] });
+  } catch (error) {
+    console.error("Error updating player:", error);
+    res.status(500).json({ error: "Internal Server Error", message: error.message });
   }
 });
 // Endpoint for handling search Event Filter requests
