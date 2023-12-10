@@ -211,6 +211,39 @@ app.put("/updatePlayer", async (req, res) => {
     res.status(500).json({ error: "Internal Server Error", message: error.message });
   }
 });
+app.put("/updateOwner", async (req, res) => {
+  console.log("Request received at /updateOwner");
+
+  try {
+    const updatedOwner = req.body;
+
+    const teamId = updatedOwner.team_id;
+    console.log("player id: ", teamId);
+    console.log("updated gamer id: ", updatedOwner.owner_name);
+
+    const query = `
+      UPDATE Team
+      SET owner_name = $1
+      WHERE team_id = $2
+      RETURNING *;
+    `;
+
+   const result = await connection.query(query, [updatedOwner.owner_name, teamId]);
+
+   const updatedRows = result.rows;
+
+    if (updatedRows.length === 0) {
+      return res.status(404).json({ error: "Player not found" });
+    }
+
+    console.log("Player updated successfully:", updatedRows[0]);
+
+    res.json({ message: "Player updated successfully", updatedOwner: updatedRows[0] });
+  } catch (error) {
+    console.error("Error updating player:", error);
+    res.status(500).json({ error: "Internal Server Error", message: error.message });
+  }
+});
 // Endpoint for handling search Event Filter requests
 app.get("/searchEvent", async (req, res) => {
   console.log("Request received at /searchEvent");
