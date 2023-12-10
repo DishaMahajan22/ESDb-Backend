@@ -149,6 +149,8 @@ app.post('/insertOutcome', async (req, res) => {
 
     // Send the retrieved outcome as JSON in the response
     res.json(rows);
+    res.json(rows2);
+    res.json(rows3);
   } catch (error) {
 
     // Log errors
@@ -187,6 +189,7 @@ app.post('/insertStatistic', async (req, res) => {
 
     // Send the retrieved statistic as JSON in the response
     res.json(rows);
+    res.json(rows2);
   } catch (error) {
 
     // Log errors
@@ -224,6 +227,7 @@ app.post('/insertPlayer', async (req, res) => {
 
     // Send the retrieved player as JSON in the response
     res.json(rows);
+    res.json(rows2);
   } catch (error) {
 
     // Log errors
@@ -360,6 +364,8 @@ app.post('/insertEvent', async (req, res) => {
     // Send the retrieved event as JSON in the response
     res.json(rows);
     res.json(rows2);
+    res.json(rows3);
+    res.json(rows4);
   } catch (error) {
 
     // Log errors
