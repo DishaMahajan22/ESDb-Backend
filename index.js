@@ -83,11 +83,12 @@ app.post('/insertTournament', async (req, res) => {
 
     // Endpoint for handling insert requests for inserting a new team [Team_ID, Name, Owner_Name]
     app.post('/insertTeam', async (req, res) => {
-    const { Team_ID, Name, Owner_Name, Game_Name, Match_Date} = req.body;
+    const { Team_ID, Name, Owner_Name, Game_name, Match_date} = req.body;
 
     console.log('Request received at /insertTeam');
     try {
       // Insert a new team
+      console.log(Owner_Name);
       const result = await connection.query(
         "INSERT INTO Team VALUES ($1, $2, $3)",
         [Team_ID, Name, Owner_Name]
@@ -95,11 +96,11 @@ app.post('/insertTournament', async (req, res) => {
 
       let rows = result.rows; // Access the 'rows' of the data
 
-      if (Game_Name && Team_ID && Match_Date) {
+      if (Game_name && Team_ID && Match_date) {
         //insert a new competes in
         const result2 = await connection.query(
           "INSERT INTO Competes_In VALUES ($1, $2, $3)",
-          [Game_Name, Team_ID, Match_Date]
+          [Game_name, Team_ID, Match_date]
         );
         rows = result2.rows; // Access the 'rows' of the data
       }
@@ -168,7 +169,6 @@ app.post('/insertTournament', async (req, res) => {
     // Endpoint for handling insert requests for inserting a new Statistic [Statistic_ID, Player_ID, Most_used_weapon, Most_played_character, Accuracy, K_D_Ratio, Win_Rate]
     app.post('/insertStatistic', async (req, res) => {
     const { Statistic_ID, Player_ID, Most_used_weapon, Most_played_character, Accuracy, K_D_ratio, Win_rate, Stat_Date} = req.body;
-
     console.log('Request received at /insertStatistic');
     console.log(Statistic_ID, Player_ID, Most_used_weapon, Most_played_character, Accuracy, K_D_ratio, Win_rate);
     try {
@@ -177,7 +177,7 @@ app.post('/insertTournament', async (req, res) => {
         "INSERT INTO Statistic VALUES ($1, $2, $3, $4, $5, $6, $7)",
         [Statistic_ID, Player_ID, Most_used_weapon, Most_played_character, Accuracy, K_D_ratio, Win_rate]
       );
-
+      connection.query("UPDATE Player SET Statistic_ID = $1 WHERE Player_id = $2", [Statistic_ID, Player_ID]);
       let rows = result.rows; // Access the 'rows' of the data
 
       if (Player_ID && Statistic_ID && Stat_Date) {
@@ -206,7 +206,7 @@ app.post('/insertTournament', async (req, res) => {
 
     //Endpoint for handling insert requests for inserting a new player [Player_id, Statistic_id, Name, GamerTag, DOB, Birthplace]
     app.post('/insertPlayer', async (req, res) => {
-    const { Player_ID, Statistic_ID, Name, GamerTag, DOB, Birthplace, Number_Of_Players} = req.body;
+    const { Player_ID, Statistic_ID, Name, GamerTag, DOB, Birthplace} = req.body;
 
     console.log('Request received at /insertPlayer');
     try {
@@ -217,15 +217,6 @@ app.post('/insertTournament', async (req, res) => {
       );
 
       let rows = result.rows; // Access the 'rows' of the data
-
-      if (Player_ID && Team_ID && Number_Of_Players) {
-        //insert a new participates in
-        const result2 = await connection.query(
-          "INSERT INTO Participates_In VALUES ($1, $2, $3)",
-          [Player_ID, Team_ID, Number_Of_Players]
-        );
-        rows = result2.rows; // Access the 'rows' of the data
-      }
 
       // Log the result to the console
       console.log('Player:', rows);
@@ -277,11 +268,12 @@ app.post('/insertTournament', async (req, res) => {
     console.log('Request received at /insertGame');
     try {
       // Insert a new game
+      console.log("inserting game...");
       const result = await connection.query(
         "INSERT INTO Game VALUES ($1, $2, $3, $4, $5)",
         [Game_Name, Sequel_Number, Genre, Creator, Team_size]
       );
-      const rows = result.rows; // Access the 'rows' of the data
+      const rows = result; // Access the 'rows' of the data
 
       // Log the result to the console
       console.log('Game:', rows);
@@ -328,7 +320,7 @@ app.post('/insertTournament', async (req, res) => {
 
     // Endpoint for handling update requests for inserting an Event [Event_Name, Sponsor Name, Tournament_ID, Location, Seats, Start_Date, End_Date, ContractStartDate, ContractEndDate]
     app.post('/insertEvent', async (req, res) => {
-    const { Event_name, Sponsor_ID, Tournament_ID, Location, Seats, Start_date, End_date, Contract_start_date, Contract_end_date, Section_Num} = req.body;
+    const { Event_name, Sponsor_ID, Tournament_ID, Game_name, Location, Seats, Start_date, End_date, Contract_start_date, Contract_end_date, Section_Num} = req.body;
 
     console.log('Request received at /insertEvent');
     try {
