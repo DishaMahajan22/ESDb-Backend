@@ -23,7 +23,7 @@ connection
 
 // CORS Options
 const corsOptions = {
-  origin: ["https://esdb.onrender.com/", "http://localhost:3000/"],
+  origin: ["https://esdb.onrender.com/"],
   optionsSuccessStatus: 200,
 };
 
