@@ -838,6 +838,36 @@ app.get("/searchTeamStats", async (req, res) => {
   }
 });
 
+//delete fetch requests
+app.delete("/deletePlayer", async (req, res) => {
+  console.log("Request received at /deletePlayer");
+  try {
+    const { searchItem, searchName } = req.query;
+    console.log("Search Item: " + searchItem);
+    console.log("Search Name: " + searchName);
+    // Assuming searchItem is equivalent to Tournament_ID in your database
+    const result = await connection.query(
+      "DELETE FROM Tournament WHERE Tournament_ID = $1",
+      [searchItem]
+    );
+    const rows = result.rows; // Access the 'rows' of the data
+
+    // Log the result to the console
+    console.log("Tournament:", rows);
+
+    // Send the retrieved tournament as JSON in the response
+    res.json(rows);
+  } catch (error) {
+    // Log errors
+    console.error("Error deleting in the database:", error);
+
+    // Send error message in the response to frontend
+    res
+      .status(500)
+      .json({ error: "Internal Server Error deleting", message: error.message });
+  }
+});
+
 // Start the server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
