@@ -12,8 +12,8 @@ app.use(express.json());
 app.use(cors());
 
 const corsOptions = {
-  //origin: ["https://esdb.onrender.com", "http://localhost:3000"],
-  origin: ['https://esdb.onrender.com'],
+  origin: ["https://esdb.onrender.com"],
+  //origin: ['http://localhost:3000'],
   optionsSuccessStatus: 200, // some legacy browsers (IE11, various SmartTVs) choke on 204
 };
 
@@ -835,6 +835,51 @@ app.get("/searchTeamStats", async (req, res) => {
     res
       .status(500)
       .json({ error: "Internal Server Error", message: error.message });
+  }
+});
+
+//delete player from the team (remove from participates_in)
+app.delete("/deletePlayer", async (req, res) => {
+  console.log("Request received at /deletePlayer");
+  try {
+    const { Player_ID} = req.body;
+        //Delete player from accumulates table
+        const result3 = await connection.query(
+          "DELETE FROM Accumulates WHERE Player_ID = $1",
+          [Player_ID]
+        );
+    const result = await connection.query(
+      "DELETE FROM Participates_In WHERE Player_ID = $1",
+      [Player_ID]
+    );
+    const rows = result.rows; // Access the 'rows' of the data
+
+    //Delete player from statistic table
+    const result2 = await connection.query(
+      "DELETE FROM Statistic WHERE Player_ID = $1",
+      [Player_ID]
+    );
+    const rows2 = result2.rows; // Access the 'rows' of the data
+
+    const result0 = await connection.query(
+      "DELETE FROM Player WHERE Player_id = $1",
+      [Player_ID]
+    );
+    const rows3 = result3.rows; // Access the 'rows' of the data
+
+    // Log the result to the console
+    console.log("Player:", rows);
+    console.log("Statistic:", rows2);
+    console.log("Accumulates:", rows3);
+
+    // Send the retrieved player as JSON in the response
+    res.json(rows);
+  } catch (error) {
+    // Log errors
+    console.error("Error deleting in the database:", error);
+
+    // Send error message in the response to frontend
+    res.status(500).json({ error: "Internal Server Error", message: error });
   }
 });
 
