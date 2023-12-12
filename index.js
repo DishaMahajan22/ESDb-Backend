@@ -849,8 +849,24 @@ app.delete("/deletePlayerFromTeam", async (req, res) => {
     );
     const rows = result.rows; // Access the 'rows' of the data
 
+    //Delete player from statistic table
+    const result2 = await connection.query(
+      "DELETE FROM Statistic WHERE Player_ID = $1",
+      [Player_ID]
+    );
+    const rows2 = result2.rows; // Access the 'rows' of the data
+
+    //Delete player from accumulates table
+    const result3 = await connection.query(
+      "DELETE FROM Accumulates WHERE Player_ID = $1",
+      [Player_ID]
+    );
+    const rows3 = result3.rows; // Access the 'rows' of the data
+
     // Log the result to the console
     console.log("Player:", rows);
+    console.log("Statistic:", rows2);
+    console.log("Accumulates:", rows3);
 
     // Send the retrieved player as JSON in the response
     res.json(rows);
