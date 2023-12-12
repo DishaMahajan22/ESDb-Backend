@@ -13,7 +13,7 @@ app.use(cors());
 
 const corsOptions = {
   //origin: ["https://esdb.onrender.com", "http://localhost:3000"],
-  origin: ['https://esdb.onrender.com'],
+  origin: ['http://localhost:3000'],
   optionsSuccessStatus: 200, // some legacy browsers (IE11, various SmartTVs) choke on 204
 };
 
@@ -838,33 +838,28 @@ app.get("/searchTeamStats", async (req, res) => {
   }
 });
 
-//delete fetch requests
-app.delete("/deletePlayer", async (req, res) => {
-  console.log("Request received at /deletePlayer");
+//delete player from the team (remove from participates_in)
+app.delete("/deletePlayerFromTeam", async (req, res) => {
+  console.log("Request received at /deletePlayerFromTeam");
   try {
-    const { searchItem, searchName } = req.query;
-    console.log("Search Item: " + searchItem);
-    console.log("Search Name: " + searchName);
-    // Assuming searchItem is equivalent to Tournament_ID in your database
+    const { Player_ID, Team_ID } = req.body;
     const result = await connection.query(
-      "DELETE FROM Tournament WHERE Tournament_ID = $1",
-      [searchItem]
+      "DELETE FROM Participates_In WHERE Player_ID = $1",
+      [Player_ID]
     );
     const rows = result.rows; // Access the 'rows' of the data
 
     // Log the result to the console
-    console.log("Tournament:", rows);
+    console.log("Player:", rows);
 
-    // Send the retrieved tournament as JSON in the response
+    // Send the retrieved player as JSON in the response
     res.json(rows);
   } catch (error) {
     // Log errors
     console.error("Error deleting in the database:", error);
 
     // Send error message in the response to frontend
-    res
-      .status(500)
-      .json({ error: "Internal Server Error deleting", message: error.message });
+    res.status(500).json({ error: "Internal Server Error", message: error });
   }
 });
 
