@@ -12,8 +12,8 @@ app.use(express.json());
 app.use(cors());
 
 const corsOptions = {
-  //origin: ["https://esdb.onrender.com", "http://localhost:3000"],
-  origin: ['http://localhost:3000'],
+  origin: ["https://esdb.onrender.com"],
+  //origin: ['http://localhost:3000'],
   optionsSuccessStatus: 200, // some legacy browsers (IE11, various SmartTVs) choke on 204
 };
 
@@ -839,10 +839,15 @@ app.get("/searchTeamStats", async (req, res) => {
 });
 
 //delete player from the team (remove from participates_in)
-app.delete("/deletePlayerFromTeam", async (req, res) => {
-  console.log("Request received at /deletePlayerFromTeam");
+app.delete("/deletePlayer", async (req, res) => {
+  console.log("Request received at /deletePlayer");
   try {
-    const { Player_ID, Team_ID } = req.body;
+    const { Player_ID} = req.body;
+        //Delete player from accumulates table
+        const result3 = await connection.query(
+          "DELETE FROM Accumulates WHERE Player_ID = $1",
+          [Player_ID]
+        );
     const result = await connection.query(
       "DELETE FROM Participates_In WHERE Player_ID = $1",
       [Player_ID]
@@ -856,9 +861,8 @@ app.delete("/deletePlayerFromTeam", async (req, res) => {
     );
     const rows2 = result2.rows; // Access the 'rows' of the data
 
-    //Delete player from accumulates table
-    const result3 = await connection.query(
-      "DELETE FROM Accumulates WHERE Player_ID = $1",
+    const result0 = await connection.query(
+      "DELETE FROM Player WHERE Player_id = $1",
       [Player_ID]
     );
     const rows3 = result3.rows; // Access the 'rows' of the data
