@@ -1,7 +1,7 @@
 const express = require("express");
+
 var cors = require("cors");
 const test = require("dotenv").config();
-console.log(test);
 const mysql = require("mysql2");
 const app = express();
 const path = require("path");
@@ -12,8 +12,8 @@ app.use(express.json());
 app.use(cors());
 
 const corsOptions = {
-  origin: ["https://esdb.onrender.com", "http://localhost:3000"],
-  //origin: ['https://esdb.onrender.com'],
+  origin: ["https://esdb.onrender.com"],
+  //origin: ['http://localhost:3000'],
   optionsSuccessStatus: 200, // some legacy browsers (IE11, various SmartTVs) choke on 204
 };
 
@@ -28,6 +28,8 @@ connection
   .catch((error) => {
     console.error("Error connecting to the database:", error);
   });
+
+app.use(cors(corsOptions)); // Use cors middleware here
 
 // Endpoint for handling search requests
 app.get("/search", async (req, res) => {
@@ -128,6 +130,421 @@ app.get("/search", async (req, res) => {
     // Log errors
     console.error("Error searching in the database:", error);
 
+    // Send error message in the response to frontend
+    res
+      .status(500)
+      .json({ error: "Internal Server Error", message: error.message });
+  }
+});
+
+// Endpoint for handling insert requests for inserting a new tournament [Tournament_ID, Name, Start_date, End_date]
+app.post("/insertTournament", async (req, res) => {
+  console.log("inserted tournament");
+
+  console.log("Request received at /insert");
+  console.log("Request Body:", req.body);
+  try {
+    // Insert a new tournament
+    const { Tournament_ID, Name, Start_date, End_date } = req.body;
+    const result = await connection.query(
+      "INSERT INTO Tournament VALUES ($1, $2, $3, $4)",
+      [Tournament_ID, Name, Start_date, End_date]
+    );
+    const rows = result.rows; // Access the 'rows' of the data
+
+    // Log the result to the console
+    console.log("Tournament:", rows);
+
+    // Send the retrieved tournament as JSON in the response
+    res.json(rows);
+  } catch (error) {
+    // Log errors
+    console.error("Error inserting in the database:", error);
+    // Send error message in the response to frontend
+    res
+      .status(500)
+      .json({ error: "Internal Server Error", message: error.message });
+  }
+});
+
+// Endpoint for handling insert requests for inserting a new team [Team_ID, Name, Owner_Name]
+app.post("/insertTeam", async (req, res) => {
+  const { Team_ID, Name, Owner_Name, Game_name, Match_date } = req.body;
+
+  console.log("Request received at /insertTeam");
+  try {
+    // Insert a new team
+    console.log(Owner_Name);
+    const result = await connection.query(
+      "INSERT INTO Team VALUES ($1, $2, $3)",
+      [Team_ID, Name, Owner_Name]
+    );
+
+    let rows = result.rows; // Access the 'rows' of the data
+
+    if (Game_name && Team_ID && Match_date) {
+      //insert a new competes in
+      const result2 = await connection.query(
+        "INSERT INTO Competes_In VALUES ($1, $2, $3)",
+        [Game_name, Team_ID, Match_date]
+      );
+      rows = result2.rows; // Access the 'rows' of the data
+    }
+
+    // Log the result to the console
+    console.log("Team:", rows);
+
+    // Send the retrieved team as JSON in the response
+    res.json(rows);
+  } catch (error) {
+    // Log errors
+    console.error("Error inserting in the database:", error);
+
+    // Send error message in the response to frontend
+    res
+      .status(500)
+      .json({ error: "Internal Server Error", message: error.message });
+  }
+});
+
+// Endpoint for handling insert requests for inserting a new Outcome [Outcome_ID, Sponsor_ID, Event_Name, Winning_Team, Losing_Team, Winning_Score, Losing_Score]
+app.post("/insertOutcome", async (req, res) => {
+  const {
+    Outcome_ID,
+    Sponsor_ID,
+    Event_Name,
+    Winning_Team,
+    Losing_Team,
+    Winning_Score,
+    Losing_Score,
+    Duration,
+  } = req.body;
+
+  console.log("Request received at /insertOutcome");
+  try {
+    // Insert a new outcome
+    const result = await connection.query(
+      "INSERT INTO Outcome VALUES ($1, $2, $3, $4, $5, $6, $7)",
+      [
+        Outcome_ID,
+        Sponsor_ID,
+        Event_Name,
+        Winning_Team,
+        Losing_Team,
+        Winning_Score,
+        Losing_Score,
+      ]
+    );
+    let rows = result.rows; // Access the 'rows' of the data
+
+    if (Outcome_ID && Event_Name && Duration) {
+      //insert a new results in
+      const result2 = await connection.query(
+        "INSERT INTO Results_In VALUES ($1, $2, $3)",
+        [Outcome_ID, Event_Name, Duration]
+      );
+      rows = result2.rows; // Access the 'rows' of the data
+      console.log("finished inserting into results in");
+    }
+    const winning_team_id = await connection.query("SELECT Team_ID FROM Team WHERE Name = ($1)", [Winning_Team]);
+    const losing_team_id = await connection.query("SELECT Team_ID FROM Team WHERE Name = ($1)", [Losing_Team]);
+    console.log("losing team: ", Losing_Team);
+    console.log("winning team: ", Winning_Team);
+    console.log("winning id: ", winning_team_id.rows[0].team_id);
+    console.log("losing id: ", losing_team_id.rows[0].team_id);
+    
+
+    if (Outcome_ID && Sponsor_ID && Event_Name) {
+      //insert a new contributes to
+      const result3 = await connection.query(
+        "INSERT INTO Contributes_To VALUES ($1, $2, $3, $4, $5)",
+        [Outcome_ID, Sponsor_ID, Event_Name, winning_team_id.rows[0].team_id, 1]
+      );
+      const result4 = await connection.query(
+        "INSERT INTO Contributes_To VALUES ($1, $2, $3, $4, $5)",
+        [Outcome_ID, Sponsor_ID, Event_Name, losing_team_id.rows[0].team_id, 0]
+      );
+    }
+
+    // Log the result to the console
+
+    // Send the retrieved outcome as JSON in the response
+    res.json(rows);
+  } catch (error) {
+    // Log errors
+    console.error("Error inserting in the database:", error);
+
+    // Send error message in the response to frontend
+    res
+      .status(500)
+      .json({ error: "Internal Server Error", message: error.message });
+  }
+});
+
+// Endpoint for handling insert requests for inserting a new Statistic [Statistic_ID, Player_ID, Most_used_weapon, Most_played_character, Accuracy, K_D_Ratio, Win_Rate]
+app.post("/insertStatistic", async (req, res) => {
+  const {
+    Statistic_ID,
+    Player_ID,
+    Most_used_weapon,
+    Most_played_character,
+    Accuracy,
+    K_D_ratio,
+    Win_rate,
+    Stat_Date,
+  } = req.body;
+  console.log("Request received at /insertStatistic");
+  console.log(
+    Statistic_ID,
+    Player_ID,
+    Most_used_weapon,
+    Most_played_character,
+    Accuracy,
+    K_D_ratio,
+    Win_rate
+  );
+  try {
+    // Insert a new statistic
+    const result = await connection.query(
+      "INSERT INTO Statistic VALUES ($1, $2, $3, $4, $5, $6, $7)",
+      [
+        Statistic_ID,
+        Player_ID,
+        Most_used_weapon,
+        Most_played_character,
+        Accuracy,
+        K_D_ratio,
+        Win_rate,
+      ]
+    );
+    connection.query(
+      "UPDATE Player SET Statistic_ID = $1 WHERE Player_id = $2",
+      [Statistic_ID, Player_ID]
+    );
+    let rows = result.rows; // Access the 'rows' of the data
+
+    if (Player_ID && Statistic_ID && Stat_Date) {
+      //insert a new accumulates
+      const result2 = await connection.query(
+        "INSERT INTO Accumulates VALUES ($1, $2, $3)",
+        [Player_ID, Statistic_ID, Stat_Date]
+      );
+      rows = result2.rows; // Access the 'rows' of the data
+    }
+
+    // Log the result to the console
+    console.log("Statistic:", rows);
+
+    // Send the retrieved statistic as JSON in the response
+    res.json(rows);
+  } catch (error) {
+    // Log errors
+    console.error("Error inserting in the database:", error);
+
+    // Send error message in the response to frontend
+    res
+      .status(500)
+      .json({ error: "Internal Server Error", message: error.message });
+  }
+});
+
+//Endpoint for handling insert requests for inserting a new player [Player_id, Statistic_id, Name, GamerTag, DOB, Birthplace]
+app.post("/insertPlayer", async (req, res) => {
+  const { Player_ID, Statistic_ID, Name, GamerTag, DOB, Birthplace } = req.body;
+
+  console.log("Request received at /insertPlayer");
+  try {
+    // Insert a new player
+    const result = await connection.query(
+      "INSERT INTO Player VALUES ($1, $2, $3, $4, $5, $6)",
+      [Player_ID, Statistic_ID, Name, GamerTag, DOB, Birthplace]
+    );
+
+    let rows = result.rows; // Access the 'rows' of the data
+
+    // Log the result to the console
+    console.log("Player:", rows);
+
+    // Send the retrieved player as JSON in the response
+    res.json(rows);
+  } catch (error) {
+    // Log errors
+    console.error("Error inserting in the database:", error);
+
+    // Send error message in the response to frontend
+    res
+      .status(500)
+      .json({ error: "Internal Server Error", message: error.message });
+  }
+});
+
+// Endpoint for handling insert requests for inserting a new Sponsor [Sponsor_ID, Name, State, Zipcode, Address]
+app.post("/insertSponsor", async (req, res) => {
+  const { Sponsor_ID, Name, State, Zipcode, Address } = req.body;
+
+  console.log("Request received at /insertSponsor");
+  try {
+    // Insert a new sponsor
+    const result = await connection.query(
+      "INSERT INTO Sponsor VALUES ($1, $2, $3, $4, $5)",
+      [Sponsor_ID, Name, State, Zipcode, Address]
+    );
+    const rows = result.rows; // Access the 'rows' of the data
+
+    // Log the result to the console
+    console.log("Sponsor:", rows);
+
+    // Send the retrieved sponsor as JSON in the response
+    res.json(rows);
+  } catch (error) {
+    // Log errors
+    console.error("Error inserting in the database:", error);
+
+    // Send error message in the response to frontend
+    res
+      .status(500)
+      .json({ error: "Internal Server Error", message: error.message });
+  }
+});
+
+// Endpoint for handling insert requests for inserting a new Game [Game_Name, Sequel_Number, Genre, Creator, Team_size]
+app.post("/insertGame", async (req, res) => {
+  const { Game_Name, Sequel_Number, Genre, Creator, Team_size } = req.body;
+
+  console.log("Request received at /insertGame");
+  try {
+    // Insert a new game
+    console.log("inserting game...");
+    const result = await connection.query(
+      "INSERT INTO Game VALUES ($1, $2, $3, $4, $5)",
+      [Game_Name, Sequel_Number, Genre, Creator, Team_size]
+    );
+    const rows = result; // Access the 'rows' of the data
+
+    // Log the result to the console
+    console.log("Game:", rows);
+
+    // Send the retrieved game as JSON in the response
+    res.json(rows);
+  } catch (error) {
+    // Log errors
+    console.error("Error inserting in the database:", error);
+
+    // Send error message in the response to frontend
+    res
+      .status(500)
+      .json({ error: "Internal Server Error", message: error.message });
+  }
+});
+
+// Endpoint for handling insert requests for inserting a new Sponsors [Event_Name, Sponsor_ID, Start Date, End Date]
+app.post("/insertSponsorRelationship", async (req, res) => {
+  const {
+    Contract_Event_Name,
+    Contract_Sponsor_ID,
+    Contract_Start_Date,
+    Contract_End_Date,
+  } = req.body;
+
+  console.log("Request received at /insertSponsors");
+  try {
+    // Insert a new sponsors
+    const result = await connection.query(
+      "INSERT INTO Sponsors VALUES ($1, $2, $3, $4)",
+      [
+        Contract_Event_Name,
+        Contract_Sponsor_ID,
+        Contract_Start_Date,
+        Contract_End_Date,
+      ]
+    );
+    const rows = result.rows; // Access the 'rows' of the data
+
+    // Log the result to the console
+    console.log("Sponsors:", rows);
+
+    // Send the retrieved sponsors as JSON in the response
+    res.json(rows);
+  } catch (error) {
+    // Log errors
+    console.error("Error inserting in the database:", error);
+
+    // Send error message in the response to frontend
+    res
+      .status(500)
+      .json({ error: "Internal Server Error", message: error.message });
+  }
+});
+
+// Endpoint for handling update requests for inserting an Event [Event_Name, Sponsor Name, Tournament_ID, Location, Seats, Start_Date, End_Date, ContractStartDate, ContractEndDate]
+app.post("/insertEvent", async (req, res) => {
+  const {
+    Event_name,
+    Sponsor_ID,
+    Tournament_ID,
+    Game_name,
+    Location,
+    Seats,
+    Start_date,
+    End_date,
+    Contract_start_date,
+    Contract_end_date,
+    Section_Num,
+  } = req.body;
+
+  console.log("Request received at /insertEvent");
+  try {
+    // Insert a new event
+    const result = await connection.query(
+      "INSERT INTO Event VALUES ($1, $2, $3, $4, $5, $6, $7)",
+      [
+        Event_name,
+        Sponsor_ID,
+        Tournament_ID,
+        Location,
+        Seats,
+        Start_date,
+        End_date,
+      ]
+    );
+
+    let rows = result.rows; // Access the 'rows' of the data
+
+    if (Event_name && Sponsor_ID && Contract_start_date && Contract_end_date) {
+      //insert into sponsors
+      const result2 = await connection.query(
+        "INSERT INTO Sponsors VALUES ($1, $2, $3, $4)",
+        [Event_name, Sponsor_ID, Contract_start_date, Contract_end_date]
+      );
+      rows = result2.rows; // Access the 'rows' of the data
+    }
+
+    if (Tournament_ID && Event_name && Sponsor_ID && Section_Num) {
+      //insert into supervises
+      const result3 = await connection.query(
+        "INSERT INTO Supervises VALUES ($1, $2, $3, $4)",
+        [Tournament_ID, Event_name, Sponsor_ID, Section_Num]
+      );
+      rows = result3.rows; // Access the 'rows' of the data
+    }
+
+    if (Game_name && Event_name && Sponsor_ID) {
+      //insert into hosts
+      const result4 = await connection.query(
+        "INSERT INTO Hosts VALUES ($1, $2, $3)",
+        [Game_name, Event_name, Sponsor_ID]
+      );
+      rows = result4.rows; // Access the 'rows' of the data
+    }
+
+    // Log the result to the console
+    console.log("Event:", rows);
+
+    // Send the retrieved event as JSON in the response
+    res.json(rows);
+  } catch (error) {
+    // Log errors
+    console.error("Error inserting in the database:", error);
     // Send error message in the response to frontend
     res
       .status(500)
@@ -484,6 +901,51 @@ app.get("/searchTeamStats", async (req, res) => {
     res
       .status(500)
       .json({ error: "Internal Server Error", message: error.message });
+  }
+});
+
+//delete player from the team (remove from participates_in)
+app.delete("/deletePlayer", async (req, res) => {
+  console.log("Request received at /deletePlayer");
+  try {
+    const { Player_ID} = req.body;
+        //Delete player from accumulates table
+        const result3 = await connection.query(
+          "DELETE FROM Accumulates WHERE Player_ID = $1",
+          [Player_ID]
+        );
+    const result = await connection.query(
+      "DELETE FROM Participates_In WHERE Player_ID = $1",
+      [Player_ID]
+    );
+    const rows = result.rows; // Access the 'rows' of the data
+
+    //Delete player from statistic table
+    const result2 = await connection.query(
+      "DELETE FROM Statistic WHERE Player_ID = $1",
+      [Player_ID]
+    );
+    const rows2 = result2.rows; // Access the 'rows' of the data
+
+    const result0 = await connection.query(
+      "DELETE FROM Player WHERE Player_id = $1",
+      [Player_ID]
+    );
+    const rows3 = result3.rows; // Access the 'rows' of the data
+
+    // Log the result to the console
+    console.log("Player:", rows);
+    console.log("Statistic:", rows2);
+    console.log("Accumulates:", rows3);
+
+    // Send the retrieved player as JSON in the response
+    res.json(rows);
+  } catch (error) {
+    // Log errors
+    console.error("Error deleting in the database:", error);
+
+    // Send error message in the response to frontend
+    res.status(500).json({ error: "Internal Server Error", message: error });
   }
 });
 
