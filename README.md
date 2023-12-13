@@ -13,3 +13,5 @@ Open [http://localhost:5000](http://localhost:5000) to view the backend route in
 
 > Note that without opening the frontend repo [ESDb](https://github.com/DishaMahajan22/ESDb) in a new window and running it locally at the same time as the backend, nothing will occur in the backend.
 
+## File Structure
+index.js contains all the backend routes that the frontend from the ESDb repo will call.
